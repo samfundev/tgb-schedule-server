@@ -1,0 +1,18 @@
+{
+  "name": "tgb-schedule-server",
+  "version": "0.0.1",
+  "description": "A simple Node app built on Express, instantly up and running.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "got": "^11.8.2"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "license": "MIT"
+}
