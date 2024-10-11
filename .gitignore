@@ -1,4 +1,3 @@
 node_modules/
-access_token
-stats.json
+data/
 .env
