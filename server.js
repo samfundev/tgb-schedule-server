@@ -7,10 +7,7 @@ if (fs.existsSync(".env")) process.loadEnvFile();
 const mainChannelURL = "https://www.youtube.com/TheGreatBerate/live";
 const getTokenURL = `https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=client_credentials`;
 const puppyChannelURL = "https://api.twitch.tv/helix/streams?user_id=2231726";
-const spreadsheetURL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQYPWJ_vByOtSB_hmV0nHj348nVrKIpwbijjRMEXvxltE0MHeJ5jTg08PsT-8NPfJo7XLc_UJylpGIe/pub?gid=0&single=true&output=tsv";
-const videosURL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQYPWJ_vByOtSB_hmV0nHj348nVrKIpwbijjRMEXvxltE0MHeJ5jTg08PsT-8NPfJo7XLc_UJylpGIe/pub?gid=984650252&single=true&output=tsv";
+const spreadsheetId = process.env.SPREADSHEET_ID;
 
 const twitchOptions = {
   headers: {
@@ -24,6 +21,13 @@ const get = (url, options = {}) =>
       .then(response => resolve(response.body))
       .catch(error => reject(error));
   });
+
+async function getGoogleSheet(id, gId) {
+  const response = await fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gId}`);
+  const text = await response.text();
+  const values = text.split("\n").map(x => x.slice(1, -1).split(`","`));
+  return values.splice(1);
+}
 
 function pickItem(array) {
   return array[Math.floor(Math.random() * array.length)];
@@ -66,10 +70,9 @@ function getVideos() {
   }
 
   lastVideoFetch = new Date();
-  return get(videosURL)
-    .then(body => {
-      for (const rowText of body.split("\r\n").splice(1)) {
-        const row = rowText.split("\t");
+  return getGoogleSheet(spreadsheetId, "984650252")
+    .then(rows => {
+      for (const row of rows) {
         const group = row[1] == "" ? row[0] : row[1];
 
         if (!videos.hasOwnProperty(group)) videos[group] = [];
@@ -133,20 +136,15 @@ app.get("/status", (request, response) => {
 });
 
 app.get("/schedule", (request, response) => {
-  const schedule = [];
-
-  get(spreadsheetURL)
-    .then(body => {
-      for (const rowText of body.split("\r\n").splice(1)) {
-        const row = rowText.split("\t");
-        schedule.push(row);
-      }
-    })
-    .then(() => {
+  getGoogleSheet(spreadsheetId, "0")
+    .then(schedule => {
       increaseStat("visit");
       response.json(schedule);
     })
-    .catch(error => response.status(500).end());
+    .catch(error => {
+      console.error(error);
+      response.status(500).end()
+    });
 });
 
 app.get("/video", (request, response) => {
