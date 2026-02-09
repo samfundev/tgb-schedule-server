@@ -1,8 +1,8 @@
-const got = require("got");
-const express = require("express");
+import got from "got";
+import express from "express";
 const app = express();
-const fs = require("fs");
-if (fs.existsSync(".env")) process.loadEnvFile();
+import { existsSync, readFileSync, writeFileSync, rmSync } from "fs";
+if (existsSync(".env")) process.loadEnvFile();
 
 const mainChannelURL = "https://www.youtube.com/TheGreatBerate/live";
 const getTokenURL = `https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=client_credentials`;
@@ -34,15 +34,15 @@ function pickItem(array) {
 }
 
 async function getAppAccessToken() {
-  if (fs.existsSync("access_token")) {
-    let token = fs.readFileSync("access_token");
+  if (existsSync("access_token")) {
+    let token = readFileSync("access_token");
     return token;
   }
 
   const token = JSON.parse(await get(getTokenURL, { method: "POST" }))[
     "access_token"
   ];
-  fs.writeFileSync("access_token", token);
+  writeFileSync("access_token", token);
   return token;
 }
 
@@ -50,12 +50,12 @@ function increaseStat(name) {
   var date = new Date();
   var key = `${date.getFullYear()}-${date.getMonth() + 1}`;
 
-  var json = JSON.parse(fs.readFileSync("stats.json"));
+  var json = JSON.parse(readFileSync("stats.json"));
   if (!json.hasOwnProperty(key)) json[key] = { visit: 0, video: 0 };
 
   json[key][name]++;
 
-  fs.writeFileSync("stats.json", JSON.stringify(json, null, 2));
+  writeFileSync("stats.json", JSON.stringify(json, null, 2));
 }
 
 const videos = {};
@@ -106,7 +106,7 @@ async function getTwitchStatus(status) {
   } catch (error) {
     // If our token expired, get a new one.
     if (error.response.statusCode == 401) {
-      fs.rmSync("access_token");
+      rmSync("access_token");
       return await getTwitchStatus(status);
     }
 
@@ -161,7 +161,7 @@ app.get("/stats", (request, response) => {
   if (request.query.token != process.env.TOKEN)
     return response.status(401).end();
 
-  var json = JSON.parse(fs.readFileSync("stats.json"));
+  var json = JSON.parse(readFileSync("stats.json"));
   var html =
     "<style>table { border-collapse: collapse; } th, td { padding: .2em; border: 1px solid black; }</style> <table><tr><th>Date<th>Visits<th>Videos";
   var total = { visit: 0, video: 0 };
