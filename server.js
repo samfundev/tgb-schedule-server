@@ -34,16 +34,16 @@ function pickItem(array) {
 }
 
 async function getAppAccessToken() {
-  if (existsSync("access_token")) {
+  try {
     let token = readFileSync("access_token");
+    return JSON.parse(token);
+  } catch {
+    const token = JSON.parse(await get(getTokenURL, { method: "POST" }))[
+      "access_token"
+    ];
+    writeFileSync("access_token", JSON.stringify(token));
     return token;
   }
-
-  const token = JSON.parse(await get(getTokenURL, { method: "POST" }))[
-    "access_token"
-  ];
-  writeFileSync("access_token", token);
-  return token;
 }
 
 function increaseStat(name) {
@@ -106,7 +106,7 @@ async function getTwitchStatus(status) {
   } catch (error) {
     // If our token expired, get a new one.
     if (error.response.statusCode == 401) {
-      rmSync("access_token");
+      writeFileSync("access_token", "");
       return await getTwitchStatus(status);
     }
 
