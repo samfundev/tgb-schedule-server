@@ -105,7 +105,7 @@ async function getTwitchStatus(status) {
     status.puppy = JSON.parse(body).data.length != 0;
   } catch (error) {
     // If our token expired, get a new one.
-    if (error.statusCode == 401) {
+    if (error.response.statusCode == 401) {
       fs.rmSync("access_token");
       return await getTwitchStatus(status);
     }
